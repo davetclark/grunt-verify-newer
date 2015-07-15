@@ -8,43 +8,75 @@
 
 'use strict';
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
-  // Please see the Grunt documentation for more information regarding task
-  // creation: http://gruntjs.com/creating-tasks
+    var fs = require('fs');
 
-  grunt.registerMultiTask('verify_newer', 'Verifies that tasks such as uglify have been run to generate updated artifacts.', function() {
-    // Merge task-specific and/or target-specific options with these defaults.
-    var options = this.options({
-      punctuation: '.',
-      separator: ', '
-    });
-
-    // Iterate over all specified file groups.
-    this.files.forEach(function(f) {
-      // Concat specified files.
-      var src = f.src.filter(function(filepath) {
-        // Warn on and remove invalid source files (if nonull was set).
-        if (!grunt.file.exists(filepath)) {
-          grunt.log.warn('Source file "' + filepath + '" not found.');
-          return false;
-        } else {
-          return true;
+    function getAllTargets(taskConfig) {
+        var key,
+            targets = [];
+        for (key in taskConfig) {
+            if (key !== 'options' && taskConfig.hasOwnProperty(key)) {
+                targets.push(taskConfig[key]);
+            }
         }
-      }).map(function(filepath) {
-        // Read file source.
-        return grunt.file.read(filepath);
-      }).join(grunt.util.normalizelf(options.separator));
+        return targets;
+    }
 
-      // Handle options.
-      src += options.punctuation;
+    grunt.registerTask('verify_newer',
+        'Verifies that tasks such as uglify have been run to generate updated artifacts.',
+        function (taskName, targetName) {
+            var taskConfig = grunt.config.get(taskName);
 
-      // Write the destination file.
-      grunt.file.write(f.dest, src);
+            if (taskConfig === undefined) {
+                console.log('Invalid task name ' + taskName + '. No config provided');
+                return false;
+            }
 
-      // Print a success message.
-      grunt.log.writeln('File "' + f.dest + '" created.');
-    });
-  });
+            var targets = [];
+            if (targetName) {
+                if (!(targetName in taskConfig)) {
+                    console.log('Invalid target name ' + targetName + '. No config provided in ' + taskName);
+                    return false;
+                }
+                targets.push(taskConfig[targetName]);
+            } else {
+                /* If no target name passed in, use every target not named options */
+                targets = getAllTargets(taskConfig);
+            }
 
+            var i,
+                fileEntries,
+                destFile,
+                sourceFiles;
+
+            for (i in targets) {
+                fileEntries = targets[i].files;
+                if (fileEntries === undefined) {
+                    console.log(taskName + ':' + targetName + ' has no files key');
+                    return false;
+                }
+
+                for (destFile in fileEntries) {
+                    if (fileEntries.hasOwnProperty(destFile)) {
+                        /* Flatten source files, removing duplicates etc */
+                        sourceFiles = grunt.file.expand(fileEntries[destFile]);
+
+                        for (i = 0; i < sourceFiles.length; ++i) {
+                            if (!grunt.file.exists(destFile)) {
+                                console.error(destFile + ' does not yet exist');
+                                return false;
+                            }
+                            if (fs.statSync(destFile).mtime.getTime() < fs.statSync(sourceFiles[i]).mtime.getTime()) {
+                                console.error('' + destFile + ' older than ' + sourceFiles[i]);
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+    );
 };

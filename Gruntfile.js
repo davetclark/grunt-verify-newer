@@ -8,66 +8,48 @@
 
 'use strict';
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
-  // Project configuration.
-  grunt.initConfig({
-    jshint: {
-      all: [
-        'Gruntfile.js',
-        'tasks/*.js',
-        '<%= nodeunit.tests %>'
-      ],
-      options: {
-        jshintrc: '.jshintrc'
-      }
-    },
-
-    // Before generating any new files, remove any previously-created files.
-    clean: {
-      tests: ['tmp']
-    },
-
-    // Configuration to be run (and then tested).
-    verify_newer: {
-      default_options: {
-        options: {
+    // Project configuration.
+    grunt.initConfig({
+        // Unit tests.
+        nodeunit: {
+            tests: ['test/*_test.js']
         },
-        files: {
-          'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123']
-        }
-      },
-      custom_options: {
-        options: {
-          separator: ': ',
-          punctuation: ' !!!'
+
+        mockMinify: {
+            options: {
+                comment: 'This is ignored'
+            },
+            target1: {
+                files: {
+                    'tmp/t1a.js': ['test/fixtures/t1a*.js'],
+                    'tmp/t1b.js': ['test/fixtures/t1b*.js'],
+                    'tmp/t1c.js': []
+                }
+            },
+            target2: {
+                files: {
+                    'tmp/t2.js': ['test/fixtures/t2*.js']
+                }
+            }
         },
-        files: {
-          'tmp/custom_options': ['test/fixtures/testing', 'test/fixtures/123']
+        eslint: {
+            all: ['tasks/**/*.js', 'test/**/*.js']
         }
-      }
-    },
+    });
 
-    // Unit tests.
-    nodeunit: {
-      tests: ['test/*_test.js']
-    }
+    // Actually load this plugin's task(s).
+    grunt.loadTasks('tasks');
 
-  });
+    // These plugins provide necessary tasks.
+    grunt.loadNpmTasks('grunt-contrib-nodeunit');
+    grunt.loadNpmTasks('grunt-eslint');
 
-  // Actually load this plugin's task(s).
-  grunt.loadTasks('tasks');
+    // Whenever the "test" task is run, first clean the "tmp" dir, then run this
+    // plugin's task(s), then test the result.
+    grunt.registerTask('test', ['nodeunit']);
 
-  // These plugins provide necessary tasks.
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-contrib-nodeunit');
-
-  // Whenever the "test" task is run, first clean the "tmp" dir, then run this
-  // plugin's task(s), then test the result.
-  grunt.registerTask('test', ['clean', 'verify_newer', 'nodeunit']);
-
-  // By default, lint and run all tests.
-  grunt.registerTask('default', ['jshint', 'test']);
-
+    // By default, lint and run all tests.
+    grunt.registerTask('default', ['eslint', 'test']);
 };

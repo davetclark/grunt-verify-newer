@@ -1,0 +1,13 @@
+{
+    "env": {
+        "node": true
+    },
+    "rules": {
+        "quotes": [2, "single", "avoid-escape"],
+        "no-unused-vars": 0,
+        "indent": [2, 4],
+        "brace-style": [2, "1tbs", { "allowSingleLine": true }],
+        "space-before-function-paren": [2, {"anonymous": "always", "named": "never"}],
+        "key-spacing": [2, {"beforeColon": false}]
+    }
+}
